@@ -2,7 +2,7 @@ name: AxiomTune
 options:
   bundleIdPrefix: com.axiom.ff
   deploymentTarget:
-    iOS: "15.0"
+    iOS: "16.0"
   xcodeVersion: "15.0"
 settings:
   base:
@@ -14,7 +14,7 @@ targets:
   AxiomTune:
     type: application
     platform: iOS
-    deploymentTarget: "15.0"
+    deploymentTarget: "16.0"
     sources:
       - path: Sources
         excludes: ["Info.plist"]
