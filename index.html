@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FF Config Pro | Admin</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#090b10;color:#f5f7ff;
+  font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  padding:20px
+}
+.container{max-width:760px;margin:auto}
+header{display:flex;align-items:center;gap:13px;margin-bottom:28px}
+.logo{
+  background:linear-gradient(135deg,#7896ff,#4659d9);
+  padding:15px;border-radius:15px;font-weight:900
+}
+h1{font-size:22px;margin:0}
+.sub{font-size:10px;letter-spacing:2px;color:#8e9bb4;margin-top:6px}
+.card{
+  background:#121722;border:1px solid #252d3d;
+  border-radius:20px;padding:20px;margin-bottom:17px
+}
+h2{font-size:17px;margin:0 0 18px}
+label{display:block;font-size:12px;color:#aeb8cb;margin:15px 0 8px}
+input,select{
+  width:100%;padding:14px;border-radius:11px;
+  background:#090d15;border:1px solid #30394c;
+  color:white;font-size:14px
+}
+button{
+  border:0;border-radius:11px;padding:14px;
+  background:#647fff;color:white;font-weight:800;
+  width:100%;margin-top:16px;cursor:pointer
+}
+button.secondary{background:#20293b}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat{background:#0b1019;padding:14px;border-radius:13px}
+.stat small{display:block;color:#94a0b4;font-size:11px}
+.stat strong{display:block;font-size:24px;margin-top:9px}
+.item{border-top:1px solid #283040;padding:15px 0;overflow-wrap:anywhere}
+.item code{color:#8eacff}
+.muted{color:#8e98aa;font-size:12px;line-height:1.6}
+#app{display:none}
+footer{text-align:center;color:#667086;font-size:11px;margin:25px 0}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="logo">FF</div>
+  <div>
+    <h1>FF CONFIG PRO</h1>
+    <div class="sub">IOS PREMIUM · ADMIN PANEL</div>
+  </div>
+</header>
+
+<section class="card" id="login">
+  <h2>🔐 Đăng nhập quản trị</h2>
+  <p class="muted">Bản demo giao diện. Đăng nhập bằng mật khẩu demo bên dưới.</p>
+  <label>Mật khẩu Admin</label>
+  <input id="password" type="password" placeholder="Nhập mật khẩu">
+  <button onclick="login()">ĐĂNG NHẬP →</button>
+  <p class="muted">Mật khẩu demo: admin123</p>
+  <p id="loginMsg" class="muted"></p>
+</section>
+
+<section id="app">
+  <div class="card">
+    <h2>📊 Tổng quan</h2>
+    <div class="stats">
+      <div class="stat"><small>Tổng key</small><strong id="total">0</strong></div>
+      <div class="stat"><small>Đang hoạt động</small><strong id="active">0</strong></div>
+      <div class="stat"><small>Đã thu hồi</small><strong id="revoked">0</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎟️ Tạo Server Key</h2>
+    <label>Thời hạn sử dụng</label>
+    <select id="days">
+      <option value="1">1 ngày</option>
+      <option value="7">7 ngày</option>
+      <option value="30">30 ngày</option>
+    </select>
+    <label>Giới hạn thiết bị</label>
+    <select id="devices">
+      <option value="1">1 thiết bị</option>
+      <option value="2">2 thiết bị</option>
+      <option value="3">3 thiết bị</option>
+      <option value="5">5 thiết bị</option>
+    </select>
+    <button onclick="createKey()">＋ TẠO KEY MỚI</button>
+    <p id="newKey" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h2>🗝️ Danh sách key</h2>
+    <div id="list"><p class="muted">Chưa có key nào.</p></div>
+    <button class="secondary" onclick="logout()">ĐĂNG XUẤT</button>
+  </div>
+</section>
+
+<footer>FF CONFIG PRO · PERSONAL ADMIN</footer>
+</div>
+
+<script>
+let keys = [];
+
+function login(){
+  if(document.getElementById('password').value === 'admin123'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+  } else {
+    document.getElementById('loginMsg').textContent='Mật khẩu không đúng.';
+  }
+}
+
+function createKey(){
+  const random = crypto.getRandomValues(new Uint8Array(16));
+  const hex = [...random].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+  const key = 'FFP-' + hex.match(/.{1,4}/g).join('-');
+  const days = Number(document.getElementById('days').value);
+  const devices = Number(document.getElementById('devices').value);
+  const expires = Date.now() + days*86400000;
+
+  keys.unshift({key,days,devices,expires,revoked:false});
+  document.getElementById('newKey').innerHTML =
+    'Key vừa tạo:<br><code id="keyText"></code><br><button onclick="copyKey()">SAO CHÉP KEY</button>';
+  document.getElementById('keyText').textContent=key;
+  render();
+}
+
+function copyKey(){
+  const key=document.getElementById('keyText').textContent;
+  navigator.clipboard.writeText(key).then(()=>{
+    alert('Đã sao chép key!');
+  }).catch(()=>alert('Hãy nhấn giữ key để sao chép.'));
+}
+
+function revoke(i){
+  keys[i].revoked=true;
+  render();
+}
+
+function render(){
+  document.getElementById('total').textContent=keys.length;
+  document.getElementById('active').textContent=
+    keys.filter(k=>!k.revoked && k.expires>Date.now()).length;
+  document.getElementById('revoked').textContent=
+    keys.filter(k=>k.revoked || k.expires<=Date.now()).length;
+
+  const list=document.getElementById('list');
+  if(!keys.length){list.innerHTML='<p class="muted">Chưa có key nào.</p>';return}
+  list.replaceChildren();
+
+  keys.forEach((k,i)=>{
+    const item=document.createElement('div');
+    item.className='item';
+    const code=document.createElement('code');
+    code.textContent=k.key;
+    const info=document.createElement('p');
+    info.className='muted';
+    info.textContent=`${k.days} ngày · ${k.devices} thiết bị · Hết hạn: ${new Date(k.expires).toLocaleString('vi-VN')}`;
+    const status=document.createElement('p');
+    status.className='muted';
+    status.textContent=k.revoked?'Đã thu hồi':k.expires<=Date.now()?'Đã hết hạn':'Đang hoạt động';
+    item.append(code,info,status);
+    if(!k.revoked && k.expires>Date.now()){
+      const btn=document.createElement('button');
+      btn.textContent='THU HỒI KEY';
+      btn.style.background='#622a38';
+      btn.onclick=()=>revoke(i);
+      item.append(btn);
+    }
+    list.append(item);
+  });
+}
+
+function logout(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='block';
+  document.getElementById('password').value='';
+}
+</script>
+</body>
+</html>
