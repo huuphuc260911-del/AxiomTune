@@ -1,0 +1,23 @@
+name: Build IPA
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - run: |
+          xcodebuild -project AxiomTune.xcodeproj -scheme AxiomTune \
+            -sdk iphoneos -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/AxiomTune.xcarchive archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+      - run: |
+          mkdir -p build/Payload
+          cp -R build/AxiomTune.xcarchive/Products/Applications/AxiomTune.app build/Payload/
+          cd build && zip -r AxiomTune-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AxiomTune-ipa
+          path: build/AxiomTune-unsigned.ipa
